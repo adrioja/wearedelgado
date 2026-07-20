@@ -1,14 +1,16 @@
+import Image from "next/image";
 import { ArrowLink } from "./arrow-link";
 import { ParallaxImage } from "./parallax-image";
 import { Reveal } from "./reveal";
+import { getPublishedProjects } from "@/lib/data/projects";
 
-const projects = [
-  { name: "Marea", category: "Branding · Hostelería" },
-  { name: "Norte Studio", category: "Diseño web · Arquitectura" },
-  { name: "Alba", category: "Identidad · Retail" },
-];
+export async function ProjectsSection() {
+  const projects = await getPublishedProjects();
 
-export function ProjectsSection() {
+  if (projects.length === 0) {
+    return null;
+  }
+
   return (
     <section
       id="proyectos"
@@ -26,11 +28,23 @@ export function ProjectsSection() {
 
         <div className="grid gap-16 md:grid-cols-3">
           {projects.map((project, index) => (
-            <Reveal key={project.name} delay={index * 0.08}>
-              <ParallaxImage
-                label={project.name}
-                className="mb-6 aspect-[3/4] w-full rounded-sm"
-              />
+            <Reveal key={project.id} delay={index * 0.08}>
+              {project.image_url ? (
+                <div className="relative mb-6 aspect-[3/4] w-full overflow-hidden rounded-sm bg-background-alt">
+                  <Image
+                    src={project.image_url}
+                    alt={project.image_alt ?? project.name}
+                    fill
+                    className="object-cover"
+                    sizes="(min-width: 768px) 33vw, 100vw"
+                  />
+                </div>
+              ) : (
+                <ParallaxImage
+                  label={project.name}
+                  className="mb-6 aspect-[3/4] w-full rounded-sm"
+                />
+              )}
               <h3 className="font-serif text-xl">{project.name}</h3>
               <p className="mb-4 text-sm text-muted">{project.category}</p>
               <ArrowLink href="#contacto">Ver proyecto</ArrowLink>

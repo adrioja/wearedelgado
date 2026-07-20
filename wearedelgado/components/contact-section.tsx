@@ -3,14 +3,24 @@
 import { useActionState } from "react";
 import { submitContactAction, type ContactFormState } from "@/app/actions";
 import { Reveal } from "./reveal";
+import type { SiteSettings } from "@/lib/data/site-settings";
 
 const initialState: ContactFormState = { status: "idle" };
 
-export function ContactSection() {
+const DEFAULT_INTRO =
+  "Cuéntanos qué necesitas y te responderemos en menos de 48 horas.";
+
+export function ContactSection({ settings }: { settings: SiteSettings | null }) {
   const [state, formAction, isPending] = useActionState(
     submitContactAction,
     initialState
   );
+
+  const hasDetails =
+    settings?.contact_email ||
+    settings?.contact_phone ||
+    settings?.schedule_text ||
+    settings?.address_text;
 
   return (
     <section
@@ -26,8 +36,74 @@ export function ContactSection() {
             Hablemos de tu próximo proyecto
           </h2>
           <p className="mt-6 max-w-sm text-pretty text-white/70">
-            Cuéntanos qué necesitas y te responderemos en menos de 48 horas.
+            {settings?.contact_intro || DEFAULT_INTRO}
           </p>
+
+          {hasDetails && (
+            <dl className="mt-10 flex flex-col gap-5 text-sm text-white/70">
+              {settings?.contact_email && (
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-white/40">
+                    Email
+                  </dt>
+                  <dd className="mt-1">
+                    <a
+                      href={`mailto:${settings.contact_email}`}
+                      className="cursor-pointer hover:text-white"
+                    >
+                      {settings.contact_email}
+                    </a>
+                  </dd>
+                </div>
+              )}
+              {settings?.contact_phone && (
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-white/40">
+                    Teléfono
+                  </dt>
+                  <dd className="mt-1">
+                    <a
+                      href={`tel:${settings.contact_phone}`}
+                      className="cursor-pointer hover:text-white"
+                    >
+                      {settings.contact_phone}
+                    </a>
+                  </dd>
+                </div>
+              )}
+              {settings?.schedule_text && (
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-white/40">
+                    Horario
+                  </dt>
+                  <dd className="mt-1 whitespace-pre-line">
+                    {settings.schedule_text}
+                  </dd>
+                </div>
+              )}
+              {settings?.address_text && (
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-white/40">
+                    Dónde estamos
+                  </dt>
+                  <dd className="mt-1 whitespace-pre-line">
+                    {settings.address_map_url ? (
+                      <a
+                        href={settings.address_map_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="cursor-pointer hover:text-white"
+                      >
+                        {settings.address_text}
+                      </a>
+                    ) : (
+                      settings.address_text
+                    )}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          )}
         </Reveal>
 
         <Reveal delay={0.1}>

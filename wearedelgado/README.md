@@ -44,16 +44,24 @@ action), nunca se exponen al navegador.
 
 ## Base de datos (Supabase)
 
-El formulario de contacto (`#contacto`) guarda leads en una tabla `leads`.
+El formulario de contacto (`#contacto`) guarda leads en una tabla `leads`, y
+el backoffice (`/admin`) gestiona proyectos, redes sociales y ajustes del
+sitio (contacto, horario, ubicación).
 
 1. Crea un proyecto en [supabase.com](https://supabase.com).
-2. Abre el SQL Editor y ejecuta `supabase/schema.sql`. Esto crea la tabla
-   `leads` con Row Level Security activado y una policy que permite **solo
-   insertar** (nunca leer/editar/borrar) desde el rol `anon`.
+2. Abre el SQL Editor y ejecuta `supabase/schema.sql` completo. Esto crea:
+   - `leads` (con RLS: `anon` solo puede insertar; `authenticated` puede leer).
+   - `projects`, `social_links`, `site_settings` (contenido editable desde el
+     backoffice; lectura pública, escritura solo para `authenticated`).
+   - El bucket de Storage `project-images` (público en lectura, con límite de
+     5 MB y solo JPG/PNG/WEBP), con sus policies de acceso.
 3. Copia la URL del proyecto y la `anon public key` a tu `.env.local`.
-4. Para consultar los leads, hazlo desde el panel de Supabase (Table Editor)
-   o con un rol autenticado propio — el rol público no tiene permiso de
-   lectura.
+4. Crea el usuario admin manualmente en **Authentication → Users → Add user**
+   (email + contraseña). No hay pantalla de registro público — solo esa
+   cuenta podrá entrar en `/admin`.
+5. Entra en `/admin/login` con esas credenciales para gestionar proyectos,
+   ajustes de contacto/horario/ubicación y redes sociales, y ver los mensajes
+   del formulario de contacto.
 
 ## Despliegue en Vercel
 
