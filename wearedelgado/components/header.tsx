@@ -32,7 +32,11 @@ export function Header() {
 
   return (
     <motion.header
-      style={{ backgroundColor: background, borderColor }}
+      style={{
+        backgroundColor: background,
+        borderColor,
+        viewTransitionName: "site-header",
+      }}
       transition={{ type: "spring", stiffness: 80, damping: 20 }}
       className={`fixed inset-x-0 top-0 z-50 border-b transition-colors duration-300 ${
         scrolled ? "text-foreground" : "text-white"

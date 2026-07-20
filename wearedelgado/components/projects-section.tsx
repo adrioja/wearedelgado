@@ -27,7 +27,7 @@ export async function ProjectsSection() {
         <div className="grid gap-16 md:grid-cols-3">
           {projects.map((project, index) => (
             <Reveal key={project.id} delay={index * 0.08}>
-              <ProjectCard project={project} />
+              <ProjectCard project={project} index={index} />
             </Reveal>
           ))}
         </div>

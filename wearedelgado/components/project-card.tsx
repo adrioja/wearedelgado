@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { ViewTransition } from "react";
 import { ParallaxImage } from "./parallax-image";
 import type { Project } from "@/lib/data/projects";
 
-export function ProjectCard({ project }: { project: Project }) {
+export function ProjectCard({ project, index = 0 }: { project: Project; index?: number }) {
   return (
     <Link
       href={`/proyectos/${project.id}`}
@@ -18,20 +19,28 @@ export function ProjectCard({ project }: { project: Project }) {
         initial="rest"
         animate="rest"
       >
+        <span
+          aria-hidden="true"
+          className="absolute left-4 top-4 z-10 font-serif text-sm text-white/90 mix-blend-difference"
+        >
+          {String(index + 1).padStart(2, "0")}
+        </span>
         {project.image_url ? (
-          <motion.div
-            variants={{ rest: { scale: 1 }, hover: { scale: 1.06 } }}
-            transition={{ type: "spring", stiffness: 200, damping: 26 }}
-            className="absolute inset-0"
-          >
-            <Image
-              src={project.image_url}
-              alt={project.image_alt ?? project.name}
-              fill
-              className="object-cover"
-              sizes="(min-width: 768px) 33vw, 100vw"
-            />
-          </motion.div>
+          <ViewTransition name={`project-image-${project.id}`}>
+            <motion.div
+              variants={{ rest: { scale: 1 }, hover: { scale: 1.06 } }}
+              transition={{ type: "spring", stiffness: 200, damping: 26 }}
+              className="absolute inset-0"
+            >
+              <Image
+                src={project.image_url}
+                alt={project.image_alt ?? project.name}
+                fill
+                className="object-cover"
+                sizes="(min-width: 768px) 33vw, 100vw"
+              />
+            </motion.div>
+          </ViewTransition>
         ) : (
           <ParallaxImage label={project.name} className="h-full w-full" />
         )}

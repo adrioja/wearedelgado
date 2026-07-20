@@ -50,6 +50,63 @@ export function ProjectForm({ project }: { project?: ProjectWithImages }) {
         />
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="client" className="text-sm text-muted">
+            Cliente (opcional)
+          </label>
+          <input
+            id="client"
+            name="client"
+            type="text"
+            defaultValue={project?.client ?? ""}
+            className="rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground outline-none transition-colors focus:border-accent-ink"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="year" className="text-sm text-muted">
+            Año (opcional)
+          </label>
+          <input
+            id="year"
+            name="year"
+            type="text"
+            placeholder="2024"
+            defaultValue={project?.year ?? ""}
+            className="rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground outline-none transition-colors focus:border-accent-ink"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label htmlFor="services" className="text-sm text-muted">
+          Servicios (opcional)
+        </label>
+        <input
+          id="services"
+          name="services"
+          type="text"
+          placeholder="Branding, Diseño web, Fotografía"
+          defaultValue={project?.services?.join(", ") ?? ""}
+          className="rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground outline-none transition-colors focus:border-accent-ink"
+        />
+        <p className="text-xs text-muted">Sepáralos con comas. Se mostrarán como etiquetas.</p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label htmlFor="highlight" className="text-sm text-muted">
+          Resultado / resumen destacado (opcional)
+        </label>
+        <textarea
+          id="highlight"
+          name="highlight"
+          rows={2}
+          placeholder="Un titular corto: el reto o el resultado del proyecto."
+          defaultValue={project?.highlight ?? ""}
+          className="resize-none rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground outline-none transition-colors focus:border-accent-ink"
+        />
+      </div>
+
       <div className="flex flex-col gap-2">
         <label htmlFor="description" className="text-sm text-muted">
           Descripción (opcional)

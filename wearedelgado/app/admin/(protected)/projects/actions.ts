@@ -36,6 +36,13 @@ export async function saveProjectAction(
   const name = String(formData.get("name") ?? "").trim();
   const category = String(formData.get("category") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const client = String(formData.get("client") ?? "").trim();
+  const year = String(formData.get("year") ?? "").trim();
+  const highlight = String(formData.get("highlight") ?? "").trim();
+  const services = String(formData.get("services") ?? "")
+    .split(",")
+    .map((service) => service.trim())
+    .filter(Boolean);
   const isPublished = formData.get("is_published") === "on";
   const existingImageUrl = String(formData.get("existing_image_url") ?? "").trim();
   const existingImagePath = String(formData.get("existing_image_path") ?? "").trim();
@@ -89,6 +96,10 @@ export async function saveProjectAction(
         name,
         category,
         description: description || null,
+        client: client || null,
+        year: year || null,
+        services,
+        highlight: highlight || null,
         image_url: imageUrl,
         image_path: imagePath,
         image_alt: name,
@@ -117,6 +128,10 @@ export async function saveProjectAction(
         name,
         category,
         description: description || null,
+        client: client || null,
+        year: year || null,
+        services,
+        highlight: highlight || null,
         image_url: imageUrl,
         image_path: imagePath,
         image_alt: name,
