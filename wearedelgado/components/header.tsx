@@ -5,10 +5,10 @@ import { motion, useMotionValueEvent, useScroll, useTransform } from "framer-mot
 import { useState } from "react";
 
 const navLinks = [
-  { href: "#estudio", label: "Estudio" },
-  { href: "#servicios", label: "Servicios" },
-  { href: "#proyectos", label: "Proyectos" },
-  { href: "#contacto", label: "Contacto" },
+  { href: "/#estudio", label: "Estudio" },
+  { href: "/#servicios", label: "Servicios" },
+  { href: "/#proyectos", label: "Proyectos" },
+  { href: "/#contacto", label: "Contacto" },
 ];
 
 export function Header() {
@@ -52,7 +52,7 @@ export function Header() {
         </nav>
 
         <Link
-          href="#top"
+          href="/#top"
           className="cursor-pointer font-serif text-lg tracking-[0.15em] sm:absolute sm:left-1/2 sm:-translate-x-1/2"
         >
           WE ARE DELGADO

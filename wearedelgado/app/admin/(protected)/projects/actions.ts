@@ -111,21 +111,29 @@ export async function saveProjectAction(
 
     const nextOrder = (maxOrderRow?.sort_order ?? -1) + 1;
 
-    const { error } = await supabase.from("projects").insert({
-      name,
-      category,
-      description: description || null,
-      image_url: imageUrl,
-      image_path: imagePath,
-      image_alt: name,
-      is_published: isPublished,
-      sort_order: nextOrder,
-    });
+    const { data: created, error } = await supabase
+      .from("projects")
+      .insert({
+        name,
+        category,
+        description: description || null,
+        image_url: imageUrl,
+        image_path: imagePath,
+        image_alt: name,
+        is_published: isPublished,
+        sort_order: nextOrder,
+      })
+      .select("id")
+      .single();
 
-    if (error) {
+    if (error || !created) {
       console.error("create project error", error);
       return { status: "error", message: "No se pudo crear el proyecto." };
     }
+
+    revalidatePath("/");
+    revalidatePath("/admin/projects");
+    redirect(`/admin/projects/${created.id}/edit`);
   }
 
   revalidatePath("/");
@@ -140,14 +148,162 @@ export async function deleteProjectAction(formData: FormData) {
 
   if (!id) return;
 
+  const { data: galleryImages } = await supabase
+    .from("project_images")
+    .select("path")
+    .eq("project_id", id);
+
   await supabase.from("projects").delete().eq("id", id);
 
-  if (imagePath) {
-    await supabase.storage.from(BUCKET).remove([imagePath]);
+  const pathsToRemove = [
+    imagePath,
+    ...(galleryImages ?? []).map((image) => image.path),
+  ].filter(Boolean);
+
+  if (pathsToRemove.length > 0) {
+    await supabase.storage.from(BUCKET).remove(pathsToRemove);
   }
 
   revalidatePath("/");
   revalidatePath("/admin/projects");
+}
+
+export type GalleryFormState = {
+  status: "idle" | "error";
+  message?: string;
+};
+
+export async function addProjectImagesAction(
+  _prevState: GalleryFormState,
+  formData: FormData
+): Promise<GalleryFormState> {
+  const { supabase } = await requireAdminSession();
+
+  const projectId = String(formData.get("project_id") ?? "").trim();
+  const files = formData.getAll("images").filter(
+    (entry): entry is File => entry instanceof File && entry.size > 0
+  );
+
+  if (!projectId) {
+    return { status: "error", message: "Proyecto no válido." };
+  }
+  if (files.length === 0) {
+    return { status: "error", message: "Selecciona al menos una imagen." };
+  }
+
+  for (const file of files) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return { status: "error", message: "Formato de imagen no admitido." };
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      return { status: "error", message: "Cada imagen debe pesar menos de 5 MB." };
+    }
+  }
+
+  const { data: maxOrderRow } = await supabase
+    .from("project_images")
+    .select("sort_order")
+    .eq("project_id", projectId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let nextOrder = (maxOrderRow?.sort_order ?? -1) + 1;
+
+  for (const file of files) {
+    const ext = file.type.split("/")[1] ?? "jpg";
+    const path = `${projectId}/${randomUUID()}.${ext}`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET)
+      .upload(path, buffer, { contentType: file.type });
+
+    if (uploadError) {
+      console.error("gallery image upload error", uploadError);
+      return { status: "error", message: "No se pudo subir una de las imágenes." };
+    }
+
+    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+
+    const { error: insertError } = await supabase.from("project_images").insert({
+      project_id: projectId,
+      url: publicUrlData.publicUrl,
+      path,
+      sort_order: nextOrder,
+    });
+
+    if (insertError) {
+      console.error("gallery image insert error", insertError);
+      return { status: "error", message: "No se pudo guardar una de las imágenes." };
+    }
+
+    nextOrder += 1;
+  }
+
+  revalidatePath("/");
+  revalidatePath(`/proyectos/${projectId}`);
+  revalidatePath(`/admin/projects/${projectId}/edit`);
+  redirect(`/admin/projects/${projectId}/edit`);
+}
+
+export async function deleteProjectImageAction(formData: FormData) {
+  const { supabase } = await requireAdminSession();
+  const id = String(formData.get("id") ?? "");
+  const projectId = String(formData.get("project_id") ?? "");
+  const path = String(formData.get("path") ?? "");
+
+  if (!id) return;
+
+  await supabase.from("project_images").delete().eq("id", id);
+
+  if (path) {
+    await supabase.storage.from(BUCKET).remove([path]);
+  }
+
+  revalidatePath("/");
+  revalidatePath(`/proyectos/${projectId}`);
+  revalidatePath(`/admin/projects/${projectId}/edit`);
+}
+
+export async function reorderProjectImageAction(formData: FormData) {
+  const { supabase } = await requireAdminSession();
+  const id = String(formData.get("id") ?? "");
+  const projectId = String(formData.get("project_id") ?? "");
+  const direction = String(formData.get("direction") ?? "");
+
+  if (!id || !projectId || (direction !== "up" && direction !== "down")) return;
+
+  const { data: images } = await supabase
+    .from("project_images")
+    .select("id, sort_order")
+    .eq("project_id", projectId)
+    .order("sort_order", { ascending: true });
+
+  if (!images) return;
+
+  const index = images.findIndex((image) => image.id === id);
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+
+  if (index === -1 || swapIndex < 0 || swapIndex >= images.length) return;
+
+  const current = images[index];
+  const swapWith = images[swapIndex];
+
+  await Promise.all([
+    supabase
+      .from("project_images")
+      .update({ sort_order: swapWith.sort_order })
+      .eq("id", current.id),
+    supabase
+      .from("project_images")
+      .update({ sort_order: current.sort_order })
+      .eq("id", swapWith.id),
+  ]);
+
+  revalidatePath("/");
+  revalidatePath(`/proyectos/${projectId}`);
+  revalidatePath(`/admin/projects/${projectId}/edit`);
 }
 
 export async function toggleProjectPublishedAction(formData: FormData) {

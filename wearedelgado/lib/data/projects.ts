@@ -15,6 +15,18 @@ export type Project = {
   updated_at: string;
 };
 
+export type ProjectImage = {
+  id: string;
+  project_id: string;
+  url: string;
+  path: string;
+  alt: string | null;
+  sort_order: number;
+  created_at: string;
+};
+
+export type ProjectWithImages = Project & { images: ProjectImage[] };
+
 export async function getPublishedProjects(): Promise<Project[]> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
@@ -29,6 +41,32 @@ export async function getPublishedProjects(): Promise<Project[]> {
   }
 
   return data ?? [];
+}
+
+export async function getPublishedProjectDetail(
+  id: string
+): Promise<ProjectWithImages | null> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*, project_images(*)")
+    .eq("id", id)
+    .eq("is_published", true)
+    .order("sort_order", { referencedTable: "project_images", ascending: true })
+    .maybeSingle();
+
+  if (error) {
+    console.error("getPublishedProjectDetail error", error);
+    return null;
+  }
+
+  if (!data) return null;
+
+  const { project_images, ...project } = data as Project & {
+    project_images: ProjectImage[] | null;
+  };
+
+  return { ...project, images: project_images ?? [] };
 }
 
 export async function getAllProjectsAdmin(): Promise<Project[]> {
@@ -46,12 +84,15 @@ export async function getAllProjectsAdmin(): Promise<Project[]> {
   return data ?? [];
 }
 
-export async function getProjectById(id: string): Promise<Project | null> {
+export async function getProjectById(
+  id: string
+): Promise<ProjectWithImages | null> {
   const supabase = await getSupabaseSessionClient();
   const { data, error } = await supabase
     .from("projects")
-    .select("*")
+    .select("*, project_images(*)")
     .eq("id", id)
+    .order("sort_order", { referencedTable: "project_images", ascending: true })
     .maybeSingle();
 
   if (error) {
@@ -59,5 +100,11 @@ export async function getProjectById(id: string): Promise<Project | null> {
     return null;
   }
 
-  return data;
+  if (!data) return null;
+
+  const { project_images, ...project } = data as Project & {
+    project_images: ProjectImage[] | null;
+  };
+
+  return { ...project, images: project_images ?? [] };
 }

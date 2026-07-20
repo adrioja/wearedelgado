@@ -2,18 +2,20 @@
 
 import { useActionState } from "react";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
+import { ProjectGalleryManager } from "@/components/admin/project-gallery-manager";
 import { saveProjectAction, type ProjectFormState } from "./actions";
-import type { Project } from "@/lib/data/projects";
+import type { ProjectWithImages } from "@/lib/data/projects";
 
 const initialState: ProjectFormState = { status: "idle" };
 
-export function ProjectForm({ project }: { project?: Project }) {
+export function ProjectForm({ project }: { project?: ProjectWithImages }) {
   const [state, formAction, isPending] = useActionState(
     saveProjectAction,
     initialState
   );
 
   return (
+    <>
     <form action={formAction} className="flex max-w-xl flex-col gap-6">
       {project && <input type="hidden" name="id" value={project.id} />}
       <input type="hidden" name="existing_image_url" value={project?.image_url ?? ""} />
@@ -87,5 +89,10 @@ export function ProjectForm({ project }: { project?: Project }) {
         {isPending ? "Guardando…" : "Guardar proyecto"}
       </button>
     </form>
+
+    {project && (
+      <ProjectGalleryManager projectId={project.id} images={project.images} />
+    )}
+    </>
   );
 }

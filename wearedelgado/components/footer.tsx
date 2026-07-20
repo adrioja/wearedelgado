@@ -3,10 +3,10 @@ import { SocialIcon } from "./social-icon";
 import type { SocialLink } from "@/lib/data/social-links";
 
 const secondaryNav = [
-  { href: "#estudio", label: "Estudio" },
-  { href: "#servicios", label: "Servicios" },
-  { href: "#proyectos", label: "Proyectos" },
-  { href: "#contacto", label: "Contacto" },
+  { href: "/#estudio", label: "Estudio" },
+  { href: "/#servicios", label: "Servicios" },
+  { href: "/#proyectos", label: "Proyectos" },
+  { href: "/#contacto", label: "Contacto" },
 ];
 
 export function Footer({ socialLinks = [] }: { socialLinks?: SocialLink[] }) {
