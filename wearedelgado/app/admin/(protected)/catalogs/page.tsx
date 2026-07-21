@@ -43,6 +43,7 @@ export default async function AdminCatalogsPage() {
                 <tr>
                   <th className="px-5 py-3 font-medium">Nombre</th>
                   <th className="px-5 py-3 font-medium">Estado</th>
+                  <th className="px-5 py-3 font-medium">Descargas</th>
                   <th className="px-5 py-3 font-medium">Orden</th>
                   <th className="px-5 py-3 font-medium">Acciones</th>
                 </tr>
@@ -54,6 +55,7 @@ export default async function AdminCatalogsPage() {
                     <td className="px-5 py-4">
                       <PublishToggle catalog={catalog} />
                     </td>
+                    <td className="px-5 py-4 text-muted">{catalog.download_count}</td>
                     <td className="px-5 py-4">
                       <ReorderButtons catalog={catalog} index={index} total={catalogs.length} />
                     </td>
@@ -73,6 +75,7 @@ export default async function AdminCatalogsPage() {
                   <p className="font-medium">{catalog.name}</p>
                   <PublishToggle catalog={catalog} />
                 </div>
+                <p className="text-sm text-muted">{catalog.download_count} descargas</p>
                 <div className="mt-3 flex items-center justify-between">
                   <ReorderButtons catalog={catalog} index={index} total={catalogs.length} />
                   <CatalogRowActions catalog={catalog} />

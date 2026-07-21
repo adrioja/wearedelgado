@@ -12,6 +12,7 @@ export type Catalog = {
   cover_image_path: string | null;
   sort_order: number;
   is_published: boolean;
+  download_count: number;
   created_at: string;
   updated_at: string;
 };

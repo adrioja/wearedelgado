@@ -15,10 +15,9 @@ export function CatalogCard({ catalog, index = 0 }: { catalog: Catalog; index?: 
 
   return (
     <a
-      href={catalog.file_url}
+      href={`/catalogos/${catalog.id}/descarga`}
       target="_blank"
       rel="noopener noreferrer"
-      download
       className="group block cursor-pointer focus-visible:outline-none"
     >
       <motion.div

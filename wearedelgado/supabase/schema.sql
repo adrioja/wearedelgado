@@ -487,6 +487,7 @@ create table if not exists public.catalogs (
   cover_image_path text,
   sort_order integer not null default 0,
   is_published boolean not null default true,
+  download_count integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -563,3 +564,20 @@ create policy "Authenticated can delete catalog files"
   for delete
   to authenticated
   using (bucket_id = 'catalogs');
+
+-- Función security definer para incrementar el contador de descargas desde
+-- la landing (rol anon) sin darle permiso de UPDATE general sobre la tabla.
+create or replace function public.increment_catalog_downloads(catalog_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.catalogs
+  set download_count = download_count + 1
+  where id = catalog_id and is_published = true;
+end;
+$$;
+
+grant execute on function public.increment_catalog_downloads(uuid) to anon, authenticated;
