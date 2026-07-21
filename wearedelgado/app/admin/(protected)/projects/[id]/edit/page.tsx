@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProjectById } from "@/lib/data/projects";
 import { getClientsForSelect } from "@/lib/data/clients";
@@ -26,7 +27,16 @@ export default async function EditProjectPage({
 
   return (
     <div>
-      <h1 className="mb-8 font-serif text-2xl">Editar proyecto</h1>
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <h1 className="font-serif text-2xl">Editar proyecto</h1>
+        <Link
+          href={`/admin/preview/projects/${project.id}`}
+          target="_blank"
+          className="min-h-11 inline-flex cursor-pointer items-center rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-background-alt"
+        >
+          Vista previa
+        </Link>
+      </div>
       <ProjectForm project={project} clients={clients} />
       <ProjectFinancePanel projectId={project.id} finance={finance} />
       <ProjectFilesPanel projectId={project.id} files={files} />

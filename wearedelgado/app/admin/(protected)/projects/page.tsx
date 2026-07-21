@@ -160,6 +160,13 @@ function ProjectRowActions({ project }: { project: Project }) {
   return (
     <div className="flex items-center gap-4">
       <Link
+        href={`/admin/preview/projects/${project.id}`}
+        target="_blank"
+        className="cursor-pointer text-muted underline underline-offset-4 hover:text-foreground"
+      >
+        Vista previa
+      </Link>
+      <Link
         href={`/admin/projects/${project.id}/edit`}
         className="cursor-pointer text-accent-ink underline underline-offset-4"
       >
