@@ -10,7 +10,7 @@ import {
   type DragEvent,
 } from "react";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
-import { uploadFileDirect } from "@/lib/upload-client";
+import { describeUploadError, uploadFileDirect } from "@/lib/upload-client";
 import {
   addProjectImagesAction,
   createProjectImageUploadUrlAction,
@@ -124,7 +124,7 @@ export function ProjectGalleryManager({
       formRef.current?.requestSubmit();
     } catch (error) {
       console.error("gallery upload error", error);
-      setDropError("No se pudieron subir las imágenes.");
+      setDropError(`No se pudieron subir las imágenes: ${describeUploadError(error)}`);
     } finally {
       setUploading(false);
       setUploadProgress(null);

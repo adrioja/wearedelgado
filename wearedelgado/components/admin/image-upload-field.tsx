@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { uploadFileDirect, type UploadUrlResult } from "@/lib/upload-client";
+import { describeUploadError, uploadFileDirect, type UploadUrlResult } from "@/lib/upload-client";
 
 const MAX_SIZE_BYTES = 20 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -58,7 +58,7 @@ export function ImageUploadField({
       setMeta({ url, path: target.path });
     } catch (uploadError) {
       console.error("image upload error", uploadError);
-      setError("No se pudo subir la imagen.");
+      setError(`No se pudo subir la imagen: ${describeUploadError(uploadError)}`);
     } finally {
       setPending(false);
       onPendingChange?.(false);

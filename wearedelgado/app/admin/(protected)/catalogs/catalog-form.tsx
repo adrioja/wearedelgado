@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useActionState, useState } from "react";
-import { uploadFileDirect } from "@/lib/upload-client";
+import { describeUploadError, uploadFileDirect } from "@/lib/upload-client";
 import { createCatalogUploadUrlAction, saveCatalogAction, type CatalogFormState } from "./actions";
 import type { Catalog } from "@/lib/data/catalogs";
 
@@ -63,7 +63,7 @@ export function CatalogForm({ catalog }: { catalog?: Catalog }) {
       setFileMeta({ url, path: target.path, size: file.size, name: file.name });
     } catch (error) {
       console.error("catalog file upload error", error);
-      setFileError("No se pudo subir el PDF.");
+      setFileError(`No se pudo subir el PDF: ${describeUploadError(error)}`);
     } finally {
       setFilePending(false);
       event.target.value = "";
@@ -99,7 +99,7 @@ export function CatalogForm({ catalog }: { catalog?: Catalog }) {
       setCoverMeta({ url, path: target.path });
     } catch (error) {
       console.error("catalog cover upload error", error);
-      setCoverError("No se pudo subir la portada.");
+      setCoverError(`No se pudo subir la portada: ${describeUploadError(error)}`);
     } finally {
       setCoverPending(false);
       event.target.value = "";

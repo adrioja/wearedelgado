@@ -40,3 +40,11 @@ export async function uploadFileDirect({
   const { data } = supabase.storage.from(bucket).getPublicUrl(target.path);
   return data.publicUrl;
 }
+
+/** Extrae un mensaje legible de cualquier error lanzado durante la subida. */
+export function describeUploadError(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return "Error desconocido al subir el archivo.";
+}
