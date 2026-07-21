@@ -117,7 +117,7 @@ export function ProjectGalleryManager({
         <button
           type="submit"
           disabled={isPending}
-          className="w-fit cursor-pointer rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background-alt disabled:cursor-not-allowed disabled:opacity-60"
+          className="min-h-11 w-fit cursor-pointer rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background-alt disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isPending ? "Subiendo…" : "Añadir a la galería"}
         </button>

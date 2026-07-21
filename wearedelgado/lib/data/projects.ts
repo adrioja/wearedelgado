@@ -15,8 +15,11 @@ export type Project = {
   image_alt: string | null;
   sort_order: number;
   is_published: boolean;
+  client_id: string | null;
   created_at: string;
   updated_at: string;
+  // Solo presente en lecturas admin (join con `clients`), nunca en lecturas públicas.
+  linked_client?: { id: string; name: string } | null;
 };
 
 export type ProjectImage = {
@@ -77,7 +80,7 @@ export async function getAllProjectsAdmin(): Promise<Project[]> {
   const supabase = await getSupabaseSessionClient();
   const { data, error } = await supabase
     .from("projects")
-    .select("*")
+    .select("*, linked_client:clients(id, name)")
     .order("sort_order", { ascending: true });
 
   if (error) {
@@ -94,7 +97,7 @@ export async function getProjectById(
   const supabase = await getSupabaseSessionClient();
   const { data, error } = await supabase
     .from("projects")
-    .select("*, project_images(*)")
+    .select("*, linked_client:clients(id, name), project_images(*)")
     .eq("id", id)
     .order("sort_order", { referencedTable: "project_images", ascending: true })
     .maybeSingle();
@@ -111,4 +114,22 @@ export async function getProjectById(
   };
 
   return { ...project, images: project_images ?? [] };
+}
+
+export async function getProjectsByClientId(
+  clientId: string
+): Promise<Pick<Project, "id" | "name">[]> {
+  const supabase = await getSupabaseSessionClient();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("id, name")
+    .eq("client_id", clientId)
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("getProjectsByClientId error", error);
+    return [];
+  }
+
+  return data ?? [];
 }

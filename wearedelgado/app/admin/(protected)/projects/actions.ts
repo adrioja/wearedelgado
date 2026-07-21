@@ -11,6 +11,7 @@ export type ProjectFormState = {
 };
 
 const BUCKET = "project-images";
+const FILES_BUCKET = "project-files";
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -37,6 +38,7 @@ export async function saveProjectAction(
   const category = String(formData.get("category") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const client = String(formData.get("client") ?? "").trim();
+  const clientId = String(formData.get("client_id") ?? "").trim() || null;
   const year = String(formData.get("year") ?? "").trim();
   const highlight = String(formData.get("highlight") ?? "").trim();
   const services = String(formData.get("services") ?? "")
@@ -97,6 +99,7 @@ export async function saveProjectAction(
         category,
         description: description || null,
         client: client || null,
+        client_id: clientId,
         year: year || null,
         services,
         highlight: highlight || null,
@@ -129,6 +132,7 @@ export async function saveProjectAction(
         category,
         description: description || null,
         client: client || null,
+        client_id: clientId,
         year: year || null,
         services,
         highlight: highlight || null,
@@ -163,10 +167,10 @@ export async function deleteProjectAction(formData: FormData) {
 
   if (!id) return;
 
-  const { data: galleryImages } = await supabase
-    .from("project_images")
-    .select("path")
-    .eq("project_id", id);
+  const [{ data: galleryImages }, { data: internalFiles }] = await Promise.all([
+    supabase.from("project_images").select("path").eq("project_id", id),
+    supabase.from("project_files").select("path").eq("project_id", id),
+  ]);
 
   await supabase.from("projects").delete().eq("id", id);
 
@@ -177,6 +181,12 @@ export async function deleteProjectAction(formData: FormData) {
 
   if (pathsToRemove.length > 0) {
     await supabase.storage.from(BUCKET).remove(pathsToRemove);
+  }
+
+  const filePathsToRemove = (internalFiles ?? []).map((file) => file.path).filter(Boolean);
+
+  if (filePathsToRemove.length > 0) {
+    await supabase.storage.from(FILES_BUCKET).remove(filePathsToRemove);
   }
 
   revalidatePath("/");

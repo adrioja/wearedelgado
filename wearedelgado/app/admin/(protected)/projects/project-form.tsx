@@ -5,10 +5,17 @@ import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { ProjectGalleryManager } from "@/components/admin/project-gallery-manager";
 import { saveProjectAction, type ProjectFormState } from "./actions";
 import type { ProjectWithImages } from "@/lib/data/projects";
+import type { ClientOption } from "@/lib/data/clients";
 
 const initialState: ProjectFormState = { status: "idle" };
 
-export function ProjectForm({ project }: { project?: ProjectWithImages }) {
+export function ProjectForm({
+  project,
+  clients,
+}: {
+  project?: ProjectWithImages;
+  clients: ClientOption[];
+}) {
   const [state, formAction, isPending] = useActionState(
     saveProjectAction,
     initialState
@@ -53,7 +60,7 @@ export function ProjectForm({ project }: { project?: ProjectWithImages }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
           <label htmlFor="client" className="text-sm text-muted">
-            Cliente (opcional)
+            Cliente mostrado en la web (opcional)
           </label>
           <input
             id="client"
@@ -76,6 +83,28 @@ export function ProjectForm({ project }: { project?: ProjectWithImages }) {
             className="rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground outline-none transition-colors focus:border-accent-ink"
           />
         </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label htmlFor="client_id" className="text-sm text-muted">
+          Cliente interno (opcional)
+        </label>
+        <select
+          id="client_id"
+          name="client_id"
+          defaultValue={project?.client_id ?? ""}
+          className="cursor-pointer rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground outline-none transition-colors focus:border-accent-ink"
+        >
+          <option value="">Ninguno</option>
+          {clients.map((client) => (
+            <option key={client.id} value={client.id}>
+              {client.name}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-muted">
+          Asocia este proyecto a un cliente de tu cartera para llevar presupuesto y archivos internos.
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -141,7 +170,7 @@ export function ProjectForm({ project }: { project?: ProjectWithImages }) {
       <button
         type="submit"
         disabled={isPending}
-        className="w-fit cursor-pointer rounded-md bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+        className="min-h-11 w-fit cursor-pointer rounded-md bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPending ? "Guardando…" : "Guardar proyecto"}
       </button>
