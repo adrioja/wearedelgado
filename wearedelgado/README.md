@@ -48,6 +48,10 @@ El formulario de contacto (`#contacto`) guarda leads en una tabla `leads`, y
 el backoffice (`/admin`) gestiona proyectos, redes sociales y ajustes del
 sitio (contacto, horario, ubicación).
 
+Los cambios de esquema también están disponibles como migraciones individuales en
+`supabase/migrations/` (formato compatible con `supabase db push` de la CLI), por
+si prefieres aplicarlos uno a uno en vez de ejecutar `schema.sql` entero.
+
 1. Crea un proyecto en [supabase.com](https://supabase.com).
 2. Abre el SQL Editor y ejecuta `supabase/schema.sql` completo. Esto crea:
    - `leads` (con RLS: `anon` solo puede insertar; `authenticated` puede leer).

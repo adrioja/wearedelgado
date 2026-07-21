@@ -6,6 +6,10 @@ export type Project = {
   name: string;
   category: string;
   description: string | null;
+  client: string | null;
+  year: string | null;
+  services: string[];
+  highlight: string | null;
   image_url: string | null;
   image_path: string | null;
   image_alt: string | null;

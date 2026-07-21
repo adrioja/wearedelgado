@@ -59,25 +59,34 @@ export function ProjectGallery({ images }: { images: GalleryImage[] }) {
             animate="center"
             exit="exit"
             transition={{ type: "spring", stiffness: 220, damping: 28 }}
-            className="absolute inset-0"
+            className="absolute inset-0 overflow-hidden"
           >
-            <Image
-              src={current.url}
-              alt={current.alt}
-              fill
-              priority={index === 0}
-              className="object-cover"
-              sizes="(min-width: 1024px) 55vw, 100vw"
-            />
+            <motion.div
+              className="absolute inset-0"
+              initial={{ scale: 1 }}
+              animate={{ scale: prefersReducedMotion ? 1 : 1.06 }}
+              transition={{ duration: 6, ease: "easeOut" }}
+            >
+              <Image
+                src={current.url}
+                alt={current.alt}
+                fill
+                priority={index === 0}
+                className="object-cover"
+                sizes="(min-width: 1024px) 55vw, 100vw"
+              />
+            </motion.div>
           </motion.div>
         </AnimatePresence>
 
         {images.length > 1 && (
           <>
-            <button
+            <motion.button
               type="button"
               onClick={goPrev}
               aria-label="Imagen anterior"
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.94 }}
               className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/85 text-foreground transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ink"
             >
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden="true">
@@ -89,11 +98,13 @@ export function ProjectGallery({ images }: { images: GalleryImage[] }) {
                   strokeLinejoin="round"
                 />
               </svg>
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               type="button"
               onClick={goNext}
               aria-label="Imagen siguiente"
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.94 }}
               className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/85 text-foreground transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ink"
             >
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden="true">
@@ -105,7 +116,7 @@ export function ProjectGallery({ images }: { images: GalleryImage[] }) {
                   strokeLinejoin="round"
                 />
               </svg>
-            </button>
+            </motion.button>
 
             <div className="absolute bottom-3 right-3 rounded-full bg-black/50 px-3 py-1 text-xs tracking-wide text-white">
               {index + 1} / {images.length}
@@ -123,13 +134,24 @@ export function ProjectGallery({ images }: { images: GalleryImage[] }) {
               onClick={() => goTo(i)}
               aria-label={`Ver imagen ${i + 1}`}
               aria-current={i === index}
-              className={`relative h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-sm border transition-colors ${
-                i === index
-                  ? "border-accent-ink"
-                  : "border-border opacity-70 hover:opacity-100"
-              }`}
+              className="relative h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-sm border border-border"
             >
-              <Image src={image.url} alt="" fill className="object-cover" sizes="64px" />
+              <Image
+                src={image.url}
+                alt=""
+                fill
+                className={`object-cover transition-opacity ${
+                  i === index ? "opacity-100" : "opacity-60 hover:opacity-90"
+                }`}
+                sizes="64px"
+              />
+              {i === index && (
+                <motion.span
+                  layoutId="active-thumb-ring"
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  className="pointer-events-none absolute inset-0 rounded-sm ring-2 ring-accent-ink"
+                />
+              )}
             </button>
           ))}
         </div>
