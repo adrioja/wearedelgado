@@ -393,6 +393,9 @@ on conflict (id) do nothing;
 -- Storage — bucket de imágenes de proyectos
 -- =============================================================
 
+-- Bucket público: los objetos se sirven por su URL pública directa sin
+-- pasar por RLS. A propósito NO hay policy de select para `anon`/
+-- `authenticated` en storage.objects, para no permitir listar el bucket.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'project-images',
@@ -405,12 +408,6 @@ on conflict (id) do update set
   public = excluded.public,
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
-
-create policy "Public can view project images"
-  on storage.objects
-  for select
-  to anon, authenticated
-  using (bucket_id = 'project-images');
 
 create policy "Authenticated can upload project images"
   on storage.objects
@@ -532,7 +529,9 @@ create policy "Authenticated can delete catalogs"
 create index if not exists catalogs_sort_order_idx on public.catalogs (sort_order);
 
 -- Bucket de Storage PÚBLICO: los catálogos se descargan directamente desde
--- la landing, sin autenticación (a diferencia de `project-files`).
+-- la landing, sin autenticación (a diferencia de `project-files`). A
+-- propósito NO hay policy de select para `anon`/`authenticated` en
+-- storage.objects, para no permitir listar el bucket (solo acceso por URL).
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'catalogs',
@@ -545,12 +544,6 @@ on conflict (id) do update set
   public = excluded.public,
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
-
-create policy "Public can view catalog files"
-  on storage.objects
-  for select
-  to anon, authenticated
-  using (bucket_id = 'catalogs');
 
 create policy "Authenticated can upload catalog files"
   on storage.objects
