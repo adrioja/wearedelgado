@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdminSession } from "@/lib/supabase/dal";
+import type { UploadUrlResult } from "@/lib/upload-client";
 
 export type ProjectFormState = {
   status: "idle" | "error";
@@ -12,19 +13,28 @@ export type ProjectFormState = {
 
 const BUCKET = "project-images";
 const FILES_BUCKET = "project-files";
-const MAX_SIZE_BYTES = 20 * 1024 * 1024;
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
 
-const COMBINING_DIACRITICS = new RegExp("[\\u0300-\\u036f]", "g");
+export async function createProjectImageUploadUrlAction(
+  fileName: string,
+  pathPrefix?: string
+): Promise<UploadUrlResult> {
+  const { supabase } = await requireAdminSession();
 
-function slugify(input: string) {
-  return input
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(COMBINING_DIACRITICS, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-    .slice(0, 60);
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return { status: "error", message: "Formato de imagen no admitido." };
+  }
+
+  const path = pathPrefix ? `${pathPrefix}/${randomUUID()}.${ext}` : `${randomUUID()}.${ext}`;
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path);
+
+  if (error || !data) {
+    console.error("createProjectImageUploadUrlAction error", error);
+    return { status: "error", message: "No se pudo preparar la subida." };
+  }
+
+  return { status: "ok", path, token: data.token };
 }
 
 export async function saveProjectAction(
@@ -46,9 +56,9 @@ export async function saveProjectAction(
     .map((service) => service.trim())
     .filter(Boolean);
   const isPublished = formData.get("is_published") === "on";
-  const existingImageUrl = String(formData.get("existing_image_url") ?? "").trim();
-  const existingImagePath = String(formData.get("existing_image_path") ?? "").trim();
-  const imageFile = formData.get("image");
+  const imageUrl = String(formData.get("image_url") ?? "").trim() || null;
+  const imagePath = String(formData.get("image_path") ?? "").trim() || null;
+  const existingImagePath = String(formData.get("existing_image_path") ?? "").trim() || null;
 
   if (name.length < 2 || name.length > 200) {
     return { status: "error", message: "Escribe un nombre válido." };
@@ -57,38 +67,8 @@ export async function saveProjectAction(
     return { status: "error", message: "Escribe una categoría válida." };
   }
 
-  let imageUrl = existingImageUrl || null;
-  let imagePath = existingImagePath || null;
-
-  if (imageFile instanceof File && imageFile.size > 0) {
-    if (!ALLOWED_TYPES.includes(imageFile.type)) {
-      return { status: "error", message: "Formato de imagen no admitido." };
-    }
-    if (imageFile.size > MAX_SIZE_BYTES) {
-      return { status: "error", message: "La imagen no puede superar 20 MB." };
-    }
-
-    const ext = imageFile.type.split("/")[1] ?? "jpg";
-    const path = `${randomUUID()}-${slugify(name)}.${ext}`;
-    const buffer = Buffer.from(await imageFile.arrayBuffer());
-
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET)
-      .upload(path, buffer, { contentType: imageFile.type });
-
-    if (uploadError) {
-      console.error("project image upload error", uploadError);
-      return { status: "error", message: "No se pudo subir la imagen." };
-    }
-
-    const previousPath = imagePath;
-    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
-    imageUrl = publicUrlData.publicUrl;
-    imagePath = path;
-
-    if (previousPath) {
-      await supabase.storage.from(BUCKET).remove([previousPath]);
-    }
+  if (existingImagePath && existingImagePath !== imagePath) {
+    await supabase.storage.from(BUCKET).remove([existingImagePath]);
   }
 
   if (id) {
@@ -205,24 +185,21 @@ export async function addProjectImagesAction(
   const { supabase } = await requireAdminSession();
 
   const projectId = String(formData.get("project_id") ?? "").trim();
-  const files = formData.getAll("images").filter(
-    (entry): entry is File => entry instanceof File && entry.size > 0
-  );
+  const imagesRaw = String(formData.get("images_json") ?? "").trim();
 
   if (!projectId) {
     return { status: "error", message: "Proyecto no válido." };
   }
-  if (files.length === 0) {
-    return { status: "error", message: "Selecciona al menos una imagen." };
+
+  let images: { path: string; url: string }[] = [];
+  try {
+    images = imagesRaw ? JSON.parse(imagesRaw) : [];
+  } catch {
+    images = [];
   }
 
-  for (const file of files) {
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return { status: "error", message: "Formato de imagen no admitido." };
-    }
-    if (file.size > MAX_SIZE_BYTES) {
-      return { status: "error", message: "Cada imagen debe pesar menos de 20 MB." };
-    }
+  if (images.length === 0) {
+    return { status: "error", message: "Selecciona al menos una imagen." };
   }
 
   const { data: maxOrderRow } = await supabase
@@ -235,35 +212,18 @@ export async function addProjectImagesAction(
 
   let nextOrder = (maxOrderRow?.sort_order ?? -1) + 1;
 
-  for (const file of files) {
-    const ext = file.type.split("/")[1] ?? "jpg";
-    const path = `${projectId}/${randomUUID()}.${ext}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
+  const rows = images.map((image) => ({
+    project_id: projectId,
+    url: image.url,
+    path: image.path,
+    sort_order: nextOrder++,
+  }));
 
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET)
-      .upload(path, buffer, { contentType: file.type });
+  const { error: insertError } = await supabase.from("project_images").insert(rows);
 
-    if (uploadError) {
-      console.error("gallery image upload error", uploadError);
-      return { status: "error", message: "No se pudo subir una de las imágenes." };
-    }
-
-    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
-
-    const { error: insertError } = await supabase.from("project_images").insert({
-      project_id: projectId,
-      url: publicUrlData.publicUrl,
-      path,
-      sort_order: nextOrder,
-    });
-
-    if (insertError) {
-      console.error("gallery image insert error", insertError);
-      return { status: "error", message: "No se pudo guardar una de las imágenes." };
-    }
-
-    nextOrder += 1;
+  if (insertError) {
+    console.error("gallery image insert error", insertError);
+    return { status: "error", message: "No se pudieron guardar las imágenes." };
   }
 
   revalidatePath("/");

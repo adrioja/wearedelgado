@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { ProjectGalleryManager } from "@/components/admin/project-gallery-manager";
-import { saveProjectAction, type ProjectFormState } from "./actions";
+import { createProjectImageUploadUrlAction, saveProjectAction, type ProjectFormState } from "./actions";
 import type { ProjectWithImages } from "@/lib/data/projects";
 import type { ClientOption } from "@/lib/data/clients";
 
@@ -20,13 +20,12 @@ export function ProjectForm({
     saveProjectAction,
     initialState
   );
+  const [imagePending, setImagePending] = useState(false);
 
   return (
     <>
     <form action={formAction} className="flex max-w-xl flex-col gap-6">
       {project && <input type="hidden" name="id" value={project.id} />}
-      <input type="hidden" name="existing_image_url" value={project?.image_url ?? ""} />
-      <input type="hidden" name="existing_image_path" value={project?.image_path ?? ""} />
 
       <div className="flex flex-col gap-2">
         <label htmlFor="name" className="text-sm text-muted">
@@ -149,7 +148,14 @@ export function ProjectForm({
         />
       </div>
 
-      <ImageUploadField name="image" currentImageUrl={project?.image_url} />
+      <ImageUploadField
+        name="image"
+        bucket="project-images"
+        currentImageUrl={project?.image_url}
+        currentImagePath={project?.image_path}
+        getUploadUrl={createProjectImageUploadUrlAction}
+        onPendingChange={setImagePending}
+      />
 
       <label className="flex items-center gap-2 text-sm text-muted">
         <input
@@ -169,10 +175,10 @@ export function ProjectForm({
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || imagePending}
         className="min-h-11 w-fit cursor-pointer rounded-md bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isPending ? "Guardando…" : "Guardar proyecto"}
+        {isPending ? "Guardando…" : imagePending ? "Subiendo imagen…" : "Guardar proyecto"}
       </button>
     </form>
 

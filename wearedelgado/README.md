@@ -37,10 +37,25 @@ cp .env.example .env.local
 ```
 SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_ANON_KEY=xxxx
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=xxxx
 ```
 
-Estas variables solo se usan en el servidor (`app/actions.ts` / server
-action), nunca se exponen al navegador.
+Las dos primeras (`SUPABASE_URL` / `SUPABASE_ANON_KEY`) solo se usan en el
+servidor. Las dos `NEXT_PUBLIC_*` son las mismas credenciales pero expuestas
+al navegador a propósito: el backoffice sube los PDFs de catálogo y las fotos
+de proyecto **directamente desde el navegador** a Supabase Storage (vía
+signed upload URL, ver `lib/upload-client.ts`), sin pasar por una Server
+Action — necesario porque los hostings serverless (Vercel incluido) limitan
+el body de una Server Action a unos pocos MB, muy por debajo de lo que pesa
+un catálogo en PDF. La `anon key` no es secreta (el control de acceso real
+lo hacen las RLS policies de `supabase/schema.sql`), así que exponerla es
+seguro y es el patrón estándar de Supabase para subidas desde el cliente.
+
+Importante: las variables `NEXT_PUBLIC_*` se incrustan en el bundle en
+**tiempo de build**, no en runtime. Si las añades o cambias en Vercel,
+necesitas volver a desplegar (`vercel deploy --prod` o un redeploy desde el
+dashboard) para que tengan efecto.
 
 ## Base de datos (Supabase)
 
@@ -75,8 +90,9 @@ Este repo está listo para desplegar, sin necesidad de configuración extra de
 `vercel.json` (Next.js se detecta automáticamente).
 
 1. Importa el repositorio en [vercel.com/new](https://vercel.com/new).
-2. En **Environment Variables**, añade `SUPABASE_URL` y `SUPABASE_ANON_KEY`
-   (los mismos valores que en `.env.local`).
+2. En **Environment Variables**, añade las cuatro variables de la sección
+   anterior (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY` — los mismos valores que en `.env.local`).
 3. Deploy. Framework preset: Next.js (detectado automáticamente).
 
 O desde la CLI:
@@ -86,6 +102,8 @@ npm i -g vercel
 vercel link
 vercel env add SUPABASE_URL
 vercel env add SUPABASE_ANON_KEY
+vercel env add NEXT_PUBLIC_SUPABASE_URL
+vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
 vercel deploy --prod
 ```
 

@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdminSession } from "@/lib/supabase/dal";
+import type { UploadUrlResult } from "@/lib/upload-client";
 
 export type CatalogFormState = {
   status: "idle" | "error";
@@ -11,21 +12,27 @@ export type CatalogFormState = {
 };
 
 const BUCKET = "catalogs";
-const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
-const MAX_COVER_SIZE_BYTES = 20 * 1024 * 1024;
-const ALLOWED_FILE_TYPES = ["application/pdf"];
-const ALLOWED_COVER_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "webp"];
 
-const COMBINING_DIACRITICS = new RegExp("[\\u0300-\\u036f]", "g");
+export async function createCatalogUploadUrlAction(
+  fileName: string
+): Promise<UploadUrlResult> {
+  const { supabase } = await requireAdminSession();
 
-function slugify(input: string) {
-  return input
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(COMBINING_DIACRITICS, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-    .slice(0, 60);
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return { status: "error", message: "Tipo de archivo no admitido." };
+  }
+
+  const path = `${randomUUID()}.${ext}`;
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path);
+
+  if (error || !data) {
+    console.error("createCatalogUploadUrlAction error", error);
+    return { status: "error", message: "No se pudo preparar la subida." };
+  }
+
+  return { status: "ok", path, token: data.token };
 }
 
 export async function saveCatalogAction(
@@ -38,89 +45,29 @@ export async function saveCatalogAction(
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const isPublished = formData.get("is_published") === "on";
-  const existingFileUrl = String(formData.get("existing_file_url") ?? "").trim();
-  const existingFilePath = String(formData.get("existing_file_path") ?? "").trim();
-  const existingFileSize = String(formData.get("existing_file_size") ?? "").trim();
-  const existingCoverUrl = String(formData.get("existing_cover_url") ?? "").trim();
-  const existingCoverPath = String(formData.get("existing_cover_path") ?? "").trim();
-  const pdfFile = formData.get("file");
-  const coverFile = formData.get("cover");
+
+  const fileUrl = String(formData.get("file_url") ?? "").trim() || null;
+  const filePath = String(formData.get("file_path") ?? "").trim() || null;
+  const fileSizeRaw = String(formData.get("file_size") ?? "").trim();
+  const fileSizeBytes = fileSizeRaw ? Number(fileSizeRaw) : null;
+  const existingFilePath = String(formData.get("existing_file_path") ?? "").trim() || null;
+
+  const coverUrl = String(formData.get("cover_url") ?? "").trim() || null;
+  const coverPath = String(formData.get("cover_path") ?? "").trim() || null;
+  const existingCoverPath = String(formData.get("existing_cover_path") ?? "").trim() || null;
 
   if (name.length < 2 || name.length > 200) {
     return { status: "error", message: "Escribe un nombre válido." };
   }
-
-  let fileUrl = existingFileUrl || null;
-  let filePath = existingFilePath || null;
-  let fileSizeBytes = existingFileSize ? Number(existingFileSize) : null;
-
-  if (pdfFile instanceof File && pdfFile.size > 0) {
-    if (!ALLOWED_FILE_TYPES.includes(pdfFile.type)) {
-      return { status: "error", message: "El catálogo debe ser un archivo PDF." };
-    }
-    if (pdfFile.size > MAX_FILE_SIZE_BYTES) {
-      return { status: "error", message: "El PDF no puede superar 50 MB." };
-    }
-
-    const path = `${randomUUID()}-${slugify(name)}.pdf`;
-    const buffer = Buffer.from(await pdfFile.arrayBuffer());
-
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET)
-      .upload(path, buffer, { contentType: pdfFile.type });
-
-    if (uploadError) {
-      console.error("catalog file upload error", uploadError);
-      return { status: "error", message: "No se pudo subir el PDF." };
-    }
-
-    const previousPath = filePath;
-    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
-    fileUrl = publicUrlData.publicUrl;
-    filePath = path;
-    fileSizeBytes = pdfFile.size;
-
-    if (previousPath) {
-      await supabase.storage.from(BUCKET).remove([previousPath]);
-    }
-  }
-
-  if (!id && !fileUrl) {
+  if (!fileUrl || !filePath) {
     return { status: "error", message: "Sube el PDF del catálogo." };
   }
 
-  let coverUrl = existingCoverUrl || null;
-  let coverPath = existingCoverPath || null;
-
-  if (coverFile instanceof File && coverFile.size > 0) {
-    if (!ALLOWED_COVER_TYPES.includes(coverFile.type)) {
-      return { status: "error", message: "La portada debe ser JPG, PNG o WEBP." };
-    }
-    if (coverFile.size > MAX_COVER_SIZE_BYTES) {
-      return { status: "error", message: "La portada no puede superar 20 MB." };
-    }
-
-    const ext = coverFile.type.split("/")[1] ?? "jpg";
-    const path = `${randomUUID()}-${slugify(name)}-cover.${ext}`;
-    const buffer = Buffer.from(await coverFile.arrayBuffer());
-
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET)
-      .upload(path, buffer, { contentType: coverFile.type });
-
-    if (uploadError) {
-      console.error("catalog cover upload error", uploadError);
-      return { status: "error", message: "No se pudo subir la portada." };
-    }
-
-    const previousPath = coverPath;
-    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
-    coverUrl = publicUrlData.publicUrl;
-    coverPath = path;
-
-    if (previousPath) {
-      await supabase.storage.from(BUCKET).remove([previousPath]);
-    }
+  if (existingFilePath && existingFilePath !== filePath) {
+    await supabase.storage.from(BUCKET).remove([existingFilePath]);
+  }
+  if (existingCoverPath && existingCoverPath !== coverPath) {
+    await supabase.storage.from(BUCKET).remove([existingCoverPath]);
   }
 
   if (id) {

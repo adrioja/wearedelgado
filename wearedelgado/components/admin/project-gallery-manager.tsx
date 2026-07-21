@@ -10,8 +10,10 @@ import {
   type DragEvent,
 } from "react";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
+import { uploadFileDirect } from "@/lib/upload-client";
 import {
   addProjectImagesAction,
+  createProjectImageUploadUrlAction,
   deleteProjectImageAction,
   reorderProjectImageAction,
   type GalleryFormState,
@@ -21,6 +23,7 @@ import type { ProjectImage } from "@/lib/data/projects";
 const initialState: GalleryFormState = { status: "idle" };
 const MAX_SIZE_BYTES = 20 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const BUCKET = "project-images";
 
 type StagedFile = { file: File; previewUrl: string };
 
@@ -39,8 +42,13 @@ export function ProjectGalleryManager({
   const [staged, setStaged] = useState<StagedFile[]>([]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [dropError, setDropError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(
+    null
+  );
   const browseInputRef = useRef<HTMLInputElement>(null);
-  const submitInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const imagesJsonRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
@@ -48,13 +56,6 @@ export function ProjectGalleryManager({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!submitInputRef.current) return;
-    const dataTransfer = new DataTransfer();
-    staged.forEach((item) => dataTransfer.items.add(item.file));
-    submitInputRef.current.files = dataTransfer.files;
-  }, [staged]);
 
   function addFiles(fileList: FileList | File[]) {
     const incoming = Array.from(fileList);
@@ -93,6 +94,40 @@ export function ProjectGalleryManager({
     setIsDraggingOver(false);
     if (event.dataTransfer.files.length > 0) {
       addFiles(event.dataTransfer.files);
+    }
+  }
+
+  async function handleUploadAndSubmit() {
+    if (staged.length === 0) return;
+
+    setUploading(true);
+    setDropError(null);
+    setUploadProgress({ done: 0, total: staged.length });
+
+    try {
+      const uploaded: { path: string; url: string }[] = [];
+
+      for (const item of staged) {
+        const target = await createProjectImageUploadUrlAction(item.file.name, projectId);
+        if (target.status === "error") {
+          setDropError(target.message);
+          return;
+        }
+        const url = await uploadFileDirect({ bucket: BUCKET, target, file: item.file });
+        uploaded.push({ path: target.path, url });
+        setUploadProgress({ done: uploaded.length, total: staged.length });
+      }
+
+      if (imagesJsonRef.current) {
+        imagesJsonRef.current.value = JSON.stringify(uploaded);
+      }
+      formRef.current?.requestSubmit();
+    } catch (error) {
+      console.error("gallery upload error", error);
+      setDropError("No se pudieron subir las imágenes.");
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
     }
   }
 
@@ -173,9 +208,9 @@ export function ProjectGalleryManager({
         </ul>
       )}
 
-      <form action={formAction} className="flex flex-col gap-3">
+      <form ref={formRef} action={formAction} className="flex flex-col gap-3">
         <input type="hidden" name="project_id" value={projectId} />
-        <input ref={submitInputRef} type="file" name="images" multiple hidden />
+        <input ref={imagesJsonRef} type="hidden" name="images_json" />
         <input
           ref={browseInputRef}
           type="file"
@@ -251,14 +286,16 @@ export function ProjectGalleryManager({
                     className="object-cover"
                     sizes="200px"
                   />
-                  <button
-                    type="button"
-                    onClick={() => removeStaged(index)}
-                    aria-label="Quitar imagen"
-                    className="absolute right-1.5 top-1.5 cursor-pointer rounded-full bg-black/60 px-1.5 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
-                  >
-                    Quitar
-                  </button>
+                  {!uploading && (
+                    <button
+                      type="button"
+                      onClick={() => removeStaged(index)}
+                      aria-label="Quitar imagen"
+                      className="absolute right-1.5 top-1.5 cursor-pointer rounded-full bg-black/60 px-1.5 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      Quitar
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -276,13 +313,16 @@ export function ProjectGalleryManager({
         </div>
 
         <button
-          type="submit"
-          disabled={isPending || staged.length === 0}
+          type="button"
+          onClick={handleUploadAndSubmit}
+          disabled={isPending || uploading || staged.length === 0}
           className="min-h-11 w-fit cursor-pointer rounded-md bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending
-            ? "Subiendo…"
-            : `Añadir ${staged.length > 0 ? staged.length : ""} a la galería`.trim()}
+            ? "Guardando…"
+            : uploadProgress
+              ? `Subiendo ${uploadProgress.done}/${uploadProgress.total}…`
+              : `Añadir ${staged.length > 0 ? staged.length : ""} a la galería`.trim()}
         </button>
       </form>
     </div>
