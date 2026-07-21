@@ -1,4 +1,5 @@
 import { AboutSection } from "@/components/about-section";
+import { CatalogsSection } from "@/components/catalogs-section";
 import { ContactSection } from "@/components/contact-section";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
@@ -22,6 +23,7 @@ export default async function Home() {
         <AboutSection />
         <ServicesSection />
         <ProjectsSection />
+        <CatalogsSection />
         <ContactSection settings={settings} />
       </main>
       <Footer socialLinks={socialLinks} />

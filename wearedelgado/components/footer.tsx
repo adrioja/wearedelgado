@@ -6,6 +6,7 @@ const secondaryNav = [
   { href: "/#estudio", label: "Estudio" },
   { href: "/#servicios", label: "Servicios" },
   { href: "/#proyectos", label: "Proyectos" },
+  { href: "/#catalogos", label: "Catálogos" },
   { href: "/#contacto", label: "Contacto" },
 ];
 
