@@ -398,7 +398,7 @@ values (
   'project-images',
   'project-images',
   true,
-  5242880, -- 5 MB
+  20971520, -- 20 MB
   array['image/jpeg', 'image/png', 'image/webp']
 )
 on conflict (id) do update set
@@ -538,7 +538,7 @@ values (
   'catalogs',
   'catalogs',
   true,
-  26214400, -- 25 MB
+  52428800, -- 50 MB
   array['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
 )
 on conflict (id) do update set

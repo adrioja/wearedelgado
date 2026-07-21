@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
-const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_SIZE_BYTES = 20 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export function ImageUploadField({
@@ -27,7 +27,7 @@ export function ImageUploadField({
     }
 
     if (file.size > MAX_SIZE_BYTES) {
-      setError("La imagen no puede superar 5 MB.");
+      setError("La imagen no puede superar 20 MB.");
       event.target.value = "";
       return;
     }
@@ -58,7 +58,7 @@ export function ImageUploadField({
       />
 
       {error && <p className="text-sm text-red-700">{error}</p>}
-      <p className="text-xs text-muted">JPG, PNG o WEBP. Máximo 5 MB.</p>
+      <p className="text-xs text-muted">JPG, PNG o WEBP. Máximo 20 MB.</p>
     </div>
   );
 }

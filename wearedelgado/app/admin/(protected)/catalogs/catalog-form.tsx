@@ -6,7 +6,7 @@ import { saveCatalogAction, type CatalogFormState } from "./actions";
 import type { Catalog } from "@/lib/data/catalogs";
 
 const initialState: CatalogFormState = { status: "idle" };
-const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 
 function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -98,7 +98,7 @@ export function CatalogForm({ catalog }: { catalog?: Catalog }) {
               return;
             }
             if (file.size > MAX_FILE_SIZE_BYTES) {
-              setFileError("El PDF no puede superar 25 MB.");
+              setFileError("El PDF no puede superar 50 MB.");
               event.target.value = "";
               setFileName(null);
               return;
@@ -110,7 +110,7 @@ export function CatalogForm({ catalog }: { catalog?: Catalog }) {
         />
         {fileName && <p className="text-xs text-muted">Nuevo archivo: {fileName}</p>}
         {fileError && <p className="text-sm text-red-700">{fileError}</p>}
-        <p className="text-xs text-muted">Solo PDF. Máximo 25 MB.</p>
+        <p className="text-xs text-muted">Solo PDF. Máximo 50 MB.</p>
       </div>
 
       <ImageUploadField name="cover" currentImageUrl={catalog?.cover_image_url} />

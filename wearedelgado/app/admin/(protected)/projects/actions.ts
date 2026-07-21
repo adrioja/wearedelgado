@@ -12,7 +12,7 @@ export type ProjectFormState = {
 
 const BUCKET = "project-images";
 const FILES_BUCKET = "project-files";
-const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_SIZE_BYTES = 20 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const COMBINING_DIACRITICS = new RegExp("[\\u0300-\\u036f]", "g");
@@ -65,7 +65,7 @@ export async function saveProjectAction(
       return { status: "error", message: "Formato de imagen no admitido." };
     }
     if (imageFile.size > MAX_SIZE_BYTES) {
-      return { status: "error", message: "La imagen no puede superar 5 MB." };
+      return { status: "error", message: "La imagen no puede superar 20 MB." };
     }
 
     const ext = imageFile.type.split("/")[1] ?? "jpg";
@@ -221,7 +221,7 @@ export async function addProjectImagesAction(
       return { status: "error", message: "Formato de imagen no admitido." };
     }
     if (file.size > MAX_SIZE_BYTES) {
-      return { status: "error", message: "Cada imagen debe pesar menos de 5 MB." };
+      return { status: "error", message: "Cada imagen debe pesar menos de 20 MB." };
     }
   }
 

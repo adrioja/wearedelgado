@@ -11,8 +11,8 @@ export type CatalogFormState = {
 };
 
 const BUCKET = "catalogs";
-const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
-const MAX_COVER_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+const MAX_COVER_SIZE_BYTES = 20 * 1024 * 1024;
 const ALLOWED_FILE_TYPES = ["application/pdf"];
 const ALLOWED_COVER_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -59,7 +59,7 @@ export async function saveCatalogAction(
       return { status: "error", message: "El catálogo debe ser un archivo PDF." };
     }
     if (pdfFile.size > MAX_FILE_SIZE_BYTES) {
-      return { status: "error", message: "El PDF no puede superar 25 MB." };
+      return { status: "error", message: "El PDF no puede superar 50 MB." };
     }
 
     const path = `${randomUUID()}-${slugify(name)}.pdf`;
@@ -97,7 +97,7 @@ export async function saveCatalogAction(
       return { status: "error", message: "La portada debe ser JPG, PNG o WEBP." };
     }
     if (coverFile.size > MAX_COVER_SIZE_BYTES) {
-      return { status: "error", message: "La portada no puede superar 5 MB." };
+      return { status: "error", message: "La portada no puede superar 20 MB." };
     }
 
     const ext = coverFile.type.split("/")[1] ?? "jpg";

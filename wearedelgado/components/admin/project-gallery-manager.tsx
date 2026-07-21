@@ -19,7 +19,7 @@ import {
 import type { ProjectImage } from "@/lib/data/projects";
 
 const initialState: GalleryFormState = { status: "idle" };
-const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_SIZE_BYTES = 20 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 type StagedFile = { file: File; previewUrl: string };
@@ -67,7 +67,7 @@ export function ProjectGalleryManager({
         continue;
       }
       if (file.size > MAX_SIZE_BYTES) {
-        error = "Cada imagen debe pesar menos de 5 MB.";
+        error = "Cada imagen debe pesar menos de 20 MB.";
         continue;
       }
       accepted.push({ file, previewUrl: URL.createObjectURL(file) });
@@ -230,7 +230,7 @@ export function ProjectGalleryManager({
           <p className="text-sm font-medium text-foreground">
             Arrastra imágenes aquí o haz clic para seleccionarlas
           </p>
-          <p className="text-xs text-muted">JPG, PNG o WEBP. Máximo 5 MB por imagen.</p>
+          <p className="text-xs text-muted">JPG, PNG o WEBP. Máximo 20 MB por imagen.</p>
         </div>
 
         {dropError && <p className="text-sm text-red-700">{dropError}</p>}

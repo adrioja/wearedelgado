@@ -58,7 +58,9 @@ si prefieres aplicarlos uno a uno en vez de ejecutar `schema.sql` entero.
    - `projects`, `social_links`, `site_settings` (contenido editable desde el
      backoffice; lectura pública, escritura solo para `authenticated`).
    - El bucket de Storage `project-images` (público en lectura, con límite de
-     5 MB y solo JPG/PNG/WEBP), con sus policies de acceso.
+     20 MB y solo JPG/PNG/WEBP), con sus policies de acceso.
+   - El bucket de Storage `catalogs` (público en lectura, con límite de 50 MB,
+     PDF + portada JPG/PNG/WEBP), con sus policies de acceso.
 3. Copia la URL del proyecto y la `anon public key` a tu `.env.local`.
 4. Crea el usuario admin manualmente en **Authentication → Users → Add user**
    (email + contraseña). No hay pantalla de registro público — solo esa
