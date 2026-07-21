@@ -6,9 +6,10 @@ import { ArrowLink } from "@/components/arrow-link";
 import { ContactSection } from "@/components/contact-section";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { NextProjectLink } from "@/components/next-project-link";
 import { ProjectGallery } from "@/components/project-gallery";
 import { Reveal } from "@/components/reveal";
-import { getPublishedProjectDetail } from "@/lib/data/projects";
+import { getNextPublishedProject, getPublishedProjectDetail } from "@/lib/data/projects";
 import { getSiteSettings } from "@/lib/data/site-settings";
 import { getSocialLinks } from "@/lib/data/social-links";
 
@@ -57,6 +58,8 @@ export default async function ProjectDetailPage({
     notFound();
   }
 
+  const nextProject = await getNextPublishedProject(project.id);
+
   const galleryImages = [
     project.image_url
       ? { url: project.image_url, alt: project.image_alt ?? project.name }
@@ -98,98 +101,129 @@ export default async function ProjectDetailPage({
             <h1 className="text-balance font-serif text-4xl leading-[1.05] sm:text-6xl md:text-7xl">
               {project.name}
             </h1>
+            {(project.client || project.year) && (
+              <p className="mt-4 text-sm text-white/70">
+                {[project.client, project.year].filter(Boolean).join(" · ")}
+              </p>
+            )}
           </div>
         </section>
+
+        <div className="border-b border-border bg-background py-6">
+          <div className="mx-auto w-full max-w-7xl px-6 sm:px-10">
+            <ArrowLink href="/#proyectos" className="text-sm">
+              Volver a proyectos
+            </ArrowLink>
+          </div>
+        </div>
 
         <section className="bg-background py-20 sm:py-28">
-          <div className="mx-auto w-full max-w-7xl px-6 sm:px-10">
-            <Reveal className="mb-12">
-              <ArrowLink href="/#proyectos" className="text-sm">
-                Volver a proyectos
-              </ArrowLink>
+          <div className="mx-auto w-full max-w-3xl px-6 text-center sm:px-10">
+            <Reveal>
+              <p className="mb-6 text-xs uppercase tracking-[0.35em] text-muted">
+                Info
+              </p>
+
+              {project.highlight ? (
+                <p className="text-pretty font-serif text-2xl leading-relaxed sm:text-4xl">
+                  {project.highlight}
+                </p>
+              ) : project.description ? (
+                <p className="text-pretty font-serif text-2xl leading-relaxed sm:text-4xl">
+                  {project.description}
+                </p>
+              ) : (
+                <p className="text-pretty font-serif text-2xl leading-relaxed sm:text-4xl">
+                  {project.name}
+                </p>
+              )}
+
+              {project.highlight && project.description && (
+                <p className="mx-auto mt-6 max-w-xl text-pretty leading-relaxed text-muted">
+                  {project.description}
+                </p>
+              )}
             </Reveal>
 
-            <div className="grid gap-14 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] md:gap-16">
-              <div className="md:sticky md:top-32 md:self-start">
-                <Reveal>
-                  <p className="mb-4 text-xs uppercase tracking-[0.35em] text-muted">
-                    Info
-                  </p>
-
-                  {project.highlight ? (
-                    <p className="text-pretty border-l-2 border-accent pl-5 font-serif text-2xl leading-relaxed sm:text-3xl">
-                      {project.highlight}
-                    </p>
-                  ) : project.description ? (
-                    <p className="text-pretty font-serif text-2xl leading-relaxed sm:text-3xl">
-                      {project.description}
-                    </p>
-                  ) : (
-                    <p className="text-pretty text-lg leading-relaxed text-muted">
-                      {project.category}
-                    </p>
-                  )}
-
-                  {project.highlight && project.description && (
-                    <p className="mt-6 text-pretty leading-relaxed text-muted">
-                      {project.description}
-                    </p>
-                  )}
-                </Reveal>
-
-                <Reveal delay={0.1}>
-                  <dl className="mt-10 flex flex-col gap-4 border-t border-border pt-8 text-sm">
-                    <div className="flex justify-between gap-6">
-                      <dt className="text-muted">Categoría</dt>
-                      <dd className="text-right">{project.category}</dd>
-                    </div>
-                    {project.client && (
-                      <div className="flex justify-between gap-6">
-                        <dt className="text-muted">Cliente</dt>
-                        <dd className="text-right">{project.client}</dd>
-                      </div>
-                    )}
-                    {project.year && (
-                      <div className="flex justify-between gap-6">
-                        <dt className="text-muted">Año</dt>
-                        <dd className="text-right">{project.year}</dd>
-                      </div>
-                    )}
-                  </dl>
-                </Reveal>
-
-                {project.services.length > 0 && (
-                  <Reveal delay={0.16}>
-                    <ul className="mt-6 flex flex-wrap gap-2">
-                      {project.services.map((service) => (
-                        <li
-                          key={service}
-                          className="rounded-full border border-border px-3 py-1 text-xs text-muted"
-                        >
-                          {service}
-                        </li>
-                      ))}
-                    </ul>
-                  </Reveal>
-                )}
-
-                <Reveal delay={0.22} className="mt-10">
-                  <ArrowLink href="/#contacto">Hablemos de tu proyecto</ArrowLink>
-                </Reveal>
-              </div>
-
-              <Reveal delay={0.08}>
-                {galleryImages.length > 0 ? (
-                  <ProjectGallery images={galleryImages} />
-                ) : (
-                  <div className="flex aspect-[4/3] w-full items-center justify-center rounded-sm bg-background-alt text-sm text-muted">
-                    Sin imágenes todavía
+            <Reveal delay={0.1}>
+              <dl className="mx-auto mt-14 flex flex-wrap items-start justify-center gap-x-10 gap-y-6 border-t border-border pt-10 text-sm">
+                <div className="flex flex-col items-center gap-1.5">
+                  <dt className="text-xs uppercase tracking-[0.2em] text-muted">
+                    Categoría
+                  </dt>
+                  <dd>{project.category}</dd>
+                </div>
+                {project.client && (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <dt className="text-xs uppercase tracking-[0.2em] text-muted">
+                      Cliente
+                    </dt>
+                    <dd>{project.client}</dd>
                   </div>
                 )}
-              </Reveal>
-            </div>
+                {project.year && (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <dt className="text-xs uppercase tracking-[0.2em] text-muted">
+                      Año
+                    </dt>
+                    <dd>{project.year}</dd>
+                  </div>
+                )}
+                {project.services.length > 0 && (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <dt className="text-xs uppercase tracking-[0.2em] text-muted">
+                      Servicios
+                    </dt>
+                    <dd className="flex flex-wrap justify-center gap-1.5">
+                      {project.services.map((service) => (
+                        <span
+                          key={service}
+                          className="rounded-full border border-border px-3 py-1 text-xs"
+                        >
+                          {service}
+                        </span>
+                      ))}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </Reveal>
+
+            <Reveal delay={0.18} className="mt-10">
+              <ArrowLink href="/#contacto">Hablemos de tu proyecto</ArrowLink>
+            </Reveal>
           </div>
         </section>
+
+        <section className="bg-background-alt py-20 sm:py-28">
+          <div className="mx-auto w-full max-w-5xl px-6 sm:px-10">
+            <Reveal className="mb-12 text-center">
+              <p className="text-xs uppercase tracking-[0.35em] text-muted">
+                Galería
+              </p>
+            </Reveal>
+
+            <Reveal delay={0.08}>
+              {galleryImages.length > 0 ? (
+                <ProjectGallery images={galleryImages} />
+              ) : (
+                <div className="flex aspect-[4/3] w-full items-center justify-center rounded-sm bg-background text-sm text-muted">
+                  Sin imágenes todavía
+                </div>
+              )}
+            </Reveal>
+          </div>
+        </section>
+
+        {nextProject && (
+          <section className="border-t border-border bg-background py-20 sm:py-28">
+            <div className="mx-auto w-full max-w-7xl px-6 sm:px-10">
+              <Reveal>
+                <NextProjectLink project={nextProject} />
+              </Reveal>
+            </div>
+          </section>
+        )}
 
         <ContactSection settings={settings} />
       </main>

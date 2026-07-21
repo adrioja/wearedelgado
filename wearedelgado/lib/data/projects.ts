@@ -47,6 +47,18 @@ export async function getPublishedProjects(): Promise<Project[]> {
   return data ?? [];
 }
 
+export async function getNextPublishedProject(
+  currentId: string
+): Promise<Project | null> {
+  const projects = await getPublishedProjects();
+  if (projects.length < 2) return null;
+
+  const index = projects.findIndex((project) => project.id === currentId);
+  if (index === -1) return null;
+
+  return projects[(index + 1) % projects.length];
+}
+
 export async function getPublishedProjectDetail(
   id: string
 ): Promise<ProjectWithImages | null> {
