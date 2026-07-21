@@ -124,6 +124,12 @@ export function ContactSection({ settings }: { settings: SiteSettings | null }) 
               type="email"
               autoComplete="email"
             />
+            <Field
+              label="Teléfono móvil"
+              name="phone"
+              type="tel"
+              autoComplete="tel"
+            />
             <FieldTextarea label="Mensaje" name="message" />
 
             <div aria-live="polite" className="min-h-6 text-sm">

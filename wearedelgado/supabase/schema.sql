@@ -5,7 +5,9 @@ create table if not exists public.leads (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   email text not null,
+  phone text,
   message text not null,
+  status text not null default 'nuevo',
   created_at timestamptz not null default now()
 );
 
@@ -13,9 +15,15 @@ comment on table public.leads is 'Envíos del formulario de contacto de la landi
 
 alter table public.leads enable row level security;
 
+alter table public.leads
+  add constraint leads_status_check
+  check (status in ('nuevo', 'contactado', 'en_proceso', 'cerrado', 'descartado'));
+
+create index if not exists leads_status_idx on public.leads (status);
+
 -- El rol anónimo (usado por la server action) solo puede insertar leads,
--- nunca leer, actualizar ni borrar. La lectura queda restringida al panel
--- de Supabase / a un rol autenticado interno.
+-- nunca leer, actualizar ni borrar. La lectura y el cambio de estado quedan
+-- restringidos al rol autenticado (backoffice).
 create policy "Public can insert leads"
   on public.leads
   for insert
@@ -24,21 +32,78 @@ create policy "Public can insert leads"
     char_length(name) between 2 and 200
     and char_length(email) between 5 and 320
     and char_length(message) between 10 and 4000
+    and phone is not null
+    and phone ~ '^[0-9+()\s-]{6,30}$'
+    and status = 'nuevo'
   );
 
 create index if not exists leads_created_at_idx on public.leads (created_at desc);
 
--- El backoffice (usuario autenticado) también debe poder leer los leads,
--- sin tocar la policy de insert para `anon` de arriba.
+-- El backoffice (usuario autenticado) también debe poder leer y actualizar
+-- (cambiar de estado) los leads, sin tocar la policy de insert para `anon`.
 create policy "Authenticated can read leads"
   on public.leads
   for select
   to authenticated
   using (true);
 
+create policy "Authenticated can update leads"
+  on public.leads
+  for update
+  to authenticated
+  using (true)
+  with check (true);
+
 -- =============================================================
 -- Backoffice — proyectos, redes sociales y ajustes del sitio
 -- =============================================================
+
+-- Cartera de clientes de la agencia. Dato puramente interno: sin ninguna
+-- policy para el rol `anon`, nunca se expone en la web pública.
+create table if not exists public.clients (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  contact_person text,
+  email text,
+  phone text,
+  tax_id text,
+  address text,
+  notes text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table public.clients is 'Clientes de la agencia, editables desde el backoffice. No accesible públicamente.';
+
+alter table public.clients enable row level security;
+
+create policy "Authenticated can read clients"
+  on public.clients
+  for select
+  to authenticated
+  using (true);
+
+create policy "Authenticated can insert clients"
+  on public.clients
+  for insert
+  to authenticated
+  with check (true);
+
+create policy "Authenticated can update clients"
+  on public.clients
+  for update
+  to authenticated
+  using (true)
+  with check (true);
+
+create policy "Authenticated can delete clients"
+  on public.clients
+  for delete
+  to authenticated
+  using (true);
+
+create index if not exists clients_name_idx on public.clients (name);
 
 -- Proyectos de portfolio, gestionados desde /admin/projects.
 create table if not exists public.projects (
@@ -55,6 +120,7 @@ create table if not exists public.projects (
   image_alt text,
   sort_order integer not null default 0,
   is_published boolean not null default true,
+  client_id uuid references public.clients(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -95,6 +161,7 @@ create policy "Authenticated can delete projects"
   using (true);
 
 create index if not exists projects_sort_order_idx on public.projects (sort_order);
+create index if not exists projects_client_id_idx on public.projects (client_id);
 
 -- Galería de imágenes adicionales por proyecto (además de la imagen de portada).
 create table if not exists public.project_images (
@@ -148,6 +215,91 @@ create policy "Authenticated can delete project images"
   using (true);
 
 create index if not exists project_images_project_id_idx on public.project_images (project_id, sort_order);
+
+-- Presupuesto y pagos por proyecto. Vive en tabla separada de `projects`
+-- (no como columnas sueltas) a propósito: `projects` se lee con la clave
+-- anon en la web pública, así que separar la tabla es la barrera de
+-- seguridad real. Sin ninguna policy para `anon`.
+create table if not exists public.project_finance (
+  project_id uuid primary key references public.projects(id) on delete cascade,
+  budget_amount numeric(12, 2),
+  paid_amount numeric(12, 2) not null default 0,
+  currency text not null default 'EUR',
+  notes text,
+  updated_at timestamptz not null default now()
+);
+
+comment on table public.project_finance is 'Presupuesto y pagos de cada proyecto. Dato sensible, solo accesible desde el backoffice.';
+
+alter table public.project_finance
+  add constraint project_finance_paid_nonnegative check (paid_amount >= 0);
+
+alter table public.project_finance
+  add constraint project_finance_budget_nonnegative check (budget_amount is null or budget_amount >= 0);
+
+alter table public.project_finance enable row level security;
+
+create policy "Authenticated can read project finance"
+  on public.project_finance
+  for select
+  to authenticated
+  using (true);
+
+create policy "Authenticated can insert project finance"
+  on public.project_finance
+  for insert
+  to authenticated
+  with check (true);
+
+create policy "Authenticated can update project finance"
+  on public.project_finance
+  for update
+  to authenticated
+  using (true)
+  with check (true);
+
+create policy "Authenticated can delete project finance"
+  on public.project_finance
+  for delete
+  to authenticated
+  using (true);
+
+-- Archivos internos por proyecto (facturas, contratos, etc.). No accesibles
+-- desde la parte pública bajo ningún concepto: sin policy para `anon`.
+create table if not exists public.project_files (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  name text not null,
+  path text not null,
+  size_bytes bigint not null,
+  mime_type text not null,
+  uploaded_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+comment on table public.project_files is 'Archivos internos (facturas, etc.) de cada proyecto. Nunca expuestos públicamente; acceso solo vía backoffice + URL firmada de corta duración.';
+
+alter table public.project_files enable row level security;
+
+create policy "Authenticated can read project files"
+  on public.project_files
+  for select
+  to authenticated
+  using (true);
+
+create policy "Authenticated can insert project files"
+  on public.project_files
+  for insert
+  to authenticated
+  with check (true);
+
+create policy "Authenticated can delete project files"
+  on public.project_files
+  for delete
+  to authenticated
+  using (true);
+
+create index if not exists project_files_project_id_idx on public.project_files (project_id, created_at desc);
 
 -- Redes sociales mostradas en el footer, lista dinámica editable desde el backoffice.
 create table if not exists public.social_links (
@@ -278,3 +430,47 @@ create policy "Authenticated can delete project images"
   for delete
   to authenticated
   using (bucket_id = 'project-images');
+
+-- =============================================================
+-- Storage — bucket PRIVADO de archivos internos de proyecto
+-- =============================================================
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'project-files',
+  'project-files',
+  false,
+  15728640, -- 15 MB
+  array[
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  ]
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+create policy "Authenticated can view project files"
+  on storage.objects
+  for select
+  to authenticated
+  using (bucket_id = 'project-files');
+
+create policy "Authenticated can upload project files"
+  on storage.objects
+  for insert
+  to authenticated
+  with check (bucket_id = 'project-files');
+
+create policy "Authenticated can delete project files"
+  on storage.objects
+  for delete
+  to authenticated
+  using (bucket_id = 'project-files');

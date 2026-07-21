@@ -54,7 +54,7 @@ export function SocialLinksEditor({ links }: { links: SocialLink[] }) {
 
           <button
             type="submit"
-            className="cursor-pointer rounded-md border border-border px-3 py-2 text-sm text-foreground transition-colors hover:border-accent-ink"
+            className="min-h-11 cursor-pointer rounded-md border border-border px-3 py-2 text-sm text-foreground transition-colors hover:border-accent-ink"
           >
             Guardar
           </button>
@@ -65,7 +65,7 @@ export function SocialLinksEditor({ links }: { links: SocialLink[] }) {
               formAction={reorderSocialLinkAction.bind(null, link.id, "up")}
               disabled={index === 0}
               aria-label="Subir"
-              className="cursor-pointer rounded p-1 text-muted transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+              className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded text-muted transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
             >
               ↑
             </button>
@@ -74,7 +74,7 @@ export function SocialLinksEditor({ links }: { links: SocialLink[] }) {
               formAction={reorderSocialLinkAction.bind(null, link.id, "down")}
               disabled={index === links.length - 1}
               aria-label="Bajar"
-              className="cursor-pointer rounded p-1 text-muted transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+              className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded text-muted transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
             >
               ↓
             </button>
@@ -83,7 +83,7 @@ export function SocialLinksEditor({ links }: { links: SocialLink[] }) {
           <button
             type="submit"
             formAction={deleteSocialLinkAction}
-            className="cursor-pointer text-sm text-red-700 underline underline-offset-4"
+            className="min-h-11 cursor-pointer text-sm text-red-700 underline underline-offset-4"
           >
             Eliminar
           </button>
@@ -117,7 +117,7 @@ export function SocialLinksEditor({ links }: { links: SocialLink[] }) {
         />
         <button
           type="submit"
-          className="cursor-pointer rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
+          className="min-h-11 cursor-pointer rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
         >
           Añadir red
         </button>

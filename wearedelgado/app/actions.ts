@@ -8,6 +8,7 @@ export type ContactFormState = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE = /^[0-9+()\s-]{6,30}$/;
 
 export async function submitContactAction(
   _prevState: ContactFormState,
@@ -20,6 +21,7 @@ export async function submitContactAction(
 
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
   const message = String(formData.get("message") ?? "").trim();
 
   if (name.length < 2 || name.length > 200) {
@@ -27,6 +29,9 @@ export async function submitContactAction(
   }
   if (!EMAIL_RE.test(email) || email.length > 320) {
     return { status: "error", message: "Escribe un email válido." };
+  }
+  if (!PHONE_RE.test(phone)) {
+    return { status: "error", message: "Escribe un teléfono válido." };
   }
   if (message.length < 10 || message.length > 4000) {
     return {
@@ -39,7 +44,7 @@ export async function submitContactAction(
     const supabase = getSupabaseServerClient();
     const { error } = await supabase
       .from("leads")
-      .insert({ name, email, message });
+      .insert({ name, email, phone, message });
 
     if (error) {
       console.error("Supabase insert error", error);

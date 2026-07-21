@@ -278,7 +278,7 @@ export function ProjectGalleryManager({
         <button
           type="submit"
           disabled={isPending || staged.length === 0}
-          className="w-fit cursor-pointer rounded-md bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-11 w-fit cursor-pointer rounded-md bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending
             ? "Subiendo…"
